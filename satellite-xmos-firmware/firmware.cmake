@@ -29,7 +29,7 @@ set(APP_COMPILER_FLAGS
 )
 
 set(APP_COMPILE_DEFINITIONS
-    DEBUG_PRINT_ENABLE=0
+    DEBUG_PRINT_ENABLE=1
     PLATFORM_USES_TILE_0=1
     PLATFORM_USES_TILE_1=1
     XUD_CORE_CLOCK=600
@@ -63,7 +63,6 @@ option(ENABLE_ALL_FFVA_PIPELINES  "Create all FFVA pipeline configurations"  OFF
 if(ENABLE_ALL_FFVA_PIPELINES)
     set(FFVA_PIPELINES_INT
         bypass
-        bypass_4mic
         fixed_delay
         beamformer
         adec
@@ -84,11 +83,11 @@ else()
         fixed_delay
         beamformer
         bypass
-        bypass_4mic
     )
 
     set(FFVA_PIPELINES_UA
         adec_altarch
+        empty
     )
 endif()
 

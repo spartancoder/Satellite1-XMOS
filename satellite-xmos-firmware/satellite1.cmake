@@ -22,8 +22,8 @@ foreach(FFVA_AP ${FFVA_PIPELINES_INT})
     elseif(${FFVA_AP} STREQUAL beamformer)
       set(PL_NAME beamformer)
       list(APPEND FFVA_INT_COMPILE_DEFINITIONS appconfPIPELINE_BYPASS=0)
-      # Enable 4-mic support in beamformer by setting SKIP_AEC
-      list(APPEND FFVA_INT_COMPILE_DEFINITIONS appconfAUDIO_PIPELINE_SKIP_AEC=0)
+      # Skip AEC for 4-mic support in beamformer (memory constraint)
+      list(APPEND FFVA_INT_COMPILE_DEFINITIONS appconfAUDIO_PIPELINE_SKIP_AEC=1)
     else()
       set(PL_NAME ${FFVA_AP})
       list(APPEND FFVA_INT_COMPILE_DEFINITIONS appconfPIPELINE_BYPASS=0)
@@ -93,38 +93,30 @@ foreach(FFVA_AP ${FFVA_PIPELINES_INT})
     #**********************
     # Merge binaries
     #**********************
-    merge_binaries(satellite1_firmware_${FFVA_AP} tile0_satellite1_firmware_${FFVA_AP} tile1_satellite1_firmware_${FFVA_AP} 1 --no-data-partition)
+    merge_binaries(satellite1_firmware_${FFVA_AP} tile0_satellite1_firmware_${FFVA_AP} tile1_satellite1_firmware_${FFVA_AP} 1)
 
     #**********************
     # Create run and debug targets
     #**********************
     create_run_target(satellite1_firmware_${FFVA_AP})
     create_debug_target(satellite1_firmware_${FFVA_AP})
-    # Note: create_upgrade_img_target disabled for 4-mic beamformer (data partition issues)
-    # create_upgrade_img_target(satellite1_firmware_${FFVA_AP} ${XTC_VERSION_MAJOR} ${XTC_VERSION_MINOR})
-    
+    create_upgrade_img_target(satellite1_firmware_${FFVA_AP} ${XTC_VERSION_MAJOR} ${XTC_VERSION_MINOR})
+
     #**********************
-    # Create data partition support targets (disabled for 4-mic beamformer)
+    # Create data partition support targets
     #**********************
     set(TARGET_NAME satellite1_firmware_${FFVA_AP})
-    # Note: FATFS and data partition targets disabled for 4-mic beamformer
-    # Enable if needed by uncommenting:
-    # set(DATA_PARTITION_FILE ${TARGET_NAME}_data_partition.bin)
-    # set(FATFS_FILE ${TARGET_NAME}_fat.fs)
-    # set(FATFS_CONTENTS_DIR ${TARGET_NAME}_fatmktmp)
-    # add_custom_target(
-    #     ${FATFS_FILE} ALL
-    #         COMMAND ${CMAKE_COMMAND} -E rm -rf ${FATFS_CONTENTS_DIR}/fs/
-    #         COMMAND ${CMAKE_COMMAND} -E make_directory ${FATFS_CONTENTS_DIR}/fs/
-    #         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/filesystem_support/demo.txt ${FATFS_CONTENTS_DIR}/fs/
-    #         COMMAND fatfs_mkimage --input=${FATFS_CONTENTS_DIR} --output=${FATFS_FILE}
-    #     COMMENT)
+    set(DATA_PARTITION_FILE ${TARGET_NAME}_data_partition.bin)
+    set(FATFS_FILE ${TARGET_NAME}_fat.fs)
+    set(FATFS_CONTENTS_DIR ${TARGET_NAME}_fatmktmp)
 
-    create_flash_app_target(
-        #[[ Target ]]                   ${TARGET_NAME}
-        #[[ Copy Files ]]               ""           # No data partition for 4-mic beamformer
-        #[[ Dependencies ]]             ""           # No data partition dependencies
-    )
+    add_custom_target(
+        ${FATFS_FILE} ALL
+        COMMAND ${CMAKE_COMMAND} -E rm -rf ${FATFS_CONTENTS_DIR}/fs/
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${FATFS_CONTENTS_DIR}/fs/
+        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/filesystem_support/demo.txt ${FATFS_CONTENTS_DIR}/fs/
+        COMMAND fatfs_mkimage --input=${FATFS_CONTENTS_DIR} --output=${FATFS_FILE}
+        COMMENT
             "Create filesystem"
         VERBATIM
     )
@@ -134,7 +126,7 @@ foreach(FFVA_AP ${FFVA_PIPELINES_INT})
     )
 
     # The filesystem is the only component in the data partition, copy it to
-    # the assocated data partition file which is required for CI.
+    # the associated data partition file which is required for CI.
     add_custom_command(
         OUTPUT ${DATA_PARTITION_FILE}
         COMMAND ${CMAKE_COMMAND} -E copy ${FATFS_FILE} ${DATA_PARTITION_FILE}
@@ -155,14 +147,14 @@ foreach(FFVA_AP ${FFVA_PIPELINES_INT})
         #[[ Copy Files ]]               "${DATA_PARTITION_FILE_LIST}"
         #[[ Dependencies ]]             "${DATA_PARTITION_FILE_LIST}"
     )
-        
+
     create_flash_image_target(
         #[[ Target ]]                  ${TARGET_NAME}
         #[[ Boot Partition Size ]]     0x100000
     #   #[[ Data Partition Contents ]] ${DATA_PARTITION_FILE}
     #   #[[ Dependencies ]]            ${DATA_PARTITION_FILE}
-
     )
+
     create_flash_app_target(
         #[[ Target ]]                  ${TARGET_NAME}
         #[[ Boot Partition Size ]]     0x100000
