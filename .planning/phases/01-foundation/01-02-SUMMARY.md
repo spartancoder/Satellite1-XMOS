@@ -64,6 +64,13 @@ completed: 2026-02-16
 - Created bypass_4mic audio pipeline with 4-mic PDM capture capability
 - Configured bypass_4mic variant in CMake build system
 - Updated satellite1.cmake to handle bypass_4mic variant properly
+
+**Post-Phase Update (Merged into beamformer):**
+- Merged bypass_4mic into beamformer variant to eliminate duplication
+- Updated beamformer/audio_pipeline_dsp.h: AP_MAX_Y_CHANNELS=4, MAX_DELAY_BUF_CHANNELS=4
+- Updated beamformer/audio_pipeline_t1.c: 4-mic capture, conditional AEC bypass, 4-channel output buffer
+- Updated satellite1.cmake: beamformer variant sets appconfAUDIO_PIPELINE_SKIP_AEC=0 for 4-mic operation
+- Removed bypass_4mic variant directory (cleanup)
 - Pipeline captures 4 microphones (channels 0,1,4,5) from PDM interface
 - Outputs only 2 channels to ESP32 via I2S (first 2 mics)
 - Uses minimal processing pipeline to avoid memory constraints
