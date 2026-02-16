@@ -32,15 +32,15 @@ target_link_options(fph_ffva_board_support_satellite1
         ${CMAKE_CURRENT_LIST_DIR}/SATELLITE1.xn
 )
 
-# MICS: 
-# North: 0 (pin 0 falling edge) 
-# South: 1 (pin 1 falling edge) 
-# East:  4 (pin 0 rising edge ) 
+# MICS:
+# North: 0 (pin 0 falling edge)
+# South: 1 (pin 1 falling edge)
+# East:  4 (pin 0 rising edge )
 # West:  5 (pin 1 rising edge )
 # pins 2 & 3 are not used
 
-# use East as first and West as second mic
-set(MIC_MAPPING "4, 5")
+# Use all 4 mics for 4-channel capture
+set(MIC_MAPPING "0, 1, 4, 5")
 
 target_compile_definitions(fph_ffva_board_support_satellite1
     INTERFACE
@@ -57,7 +57,7 @@ target_compile_definitions(fph_ffva_board_support_satellite1
         MIC_ARRAY_CONFIG_SAMPLES_PER_FRAME=240
         MIC_ARRAY_CONFIG_USE_DDR=1
         MIC_ARRAY_CONFIG_MIC_INPUT=8
-        MIC_ARRAY_CONFIG_MIC_COUNT=2
+        MIC_ARRAY_CONFIG_MIC_COUNT=4
         MIC_ARRAY_CONFIG_INPUT_MAPPING={${MIC_MAPPING}}
         
         MIC_ARRAY_CONFIG_CLOCK_BLOCK_A=XS1_CLKBLK_1
