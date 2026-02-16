@@ -92,31 +92,39 @@ foreach(FFVA_AP ${FFVA_PIPELINES_INT})
 
     #**********************
     # Merge binaries
-    #**********************    
-    merge_binaries(satellite1_firmware_${FFVA_AP} tile0_satellite1_firmware_${FFVA_AP} tile1_satellite1_firmware_${FFVA_AP} 1)
+    #**********************
+    merge_binaries(satellite1_firmware_${FFVA_AP} tile0_satellite1_firmware_${FFVA_AP} tile1_satellite1_firmware_${FFVA_AP} 1 --no-data-partition)
 
     #**********************
     # Create run and debug targets
     #**********************
     create_run_target(satellite1_firmware_${FFVA_AP})
     create_debug_target(satellite1_firmware_${FFVA_AP})
-    create_upgrade_img_target(satellite1_firmware_${FFVA_AP} ${XTC_VERSION_MAJOR} ${XTC_VERSION_MINOR})
+    # Note: create_upgrade_img_target disabled for 4-mic beamformer (data partition issues)
+    # create_upgrade_img_target(satellite1_firmware_${FFVA_AP} ${XTC_VERSION_MAJOR} ${XTC_VERSION_MINOR})
     
     #**********************
-    # Create data partition support targets
+    # Create data partition support targets (disabled for 4-mic beamformer)
     #**********************
     set(TARGET_NAME satellite1_firmware_${FFVA_AP})
-    set(DATA_PARTITION_FILE ${TARGET_NAME}_data_partition.bin)
-    set(FATFS_FILE ${TARGET_NAME}_fat.fs)
-    set(FATFS_CONTENTS_DIR ${TARGET_NAME}_fatmktmp)
+    # Note: FATFS and data partition targets disabled for 4-mic beamformer
+    # Enable if needed by uncommenting:
+    # set(DATA_PARTITION_FILE ${TARGET_NAME}_data_partition.bin)
+    # set(FATFS_FILE ${TARGET_NAME}_fat.fs)
+    # set(FATFS_CONTENTS_DIR ${TARGET_NAME}_fatmktmp)
+    # add_custom_target(
+    #     ${FATFS_FILE} ALL
+    #         COMMAND ${CMAKE_COMMAND} -E rm -rf ${FATFS_CONTENTS_DIR}/fs/
+    #         COMMAND ${CMAKE_COMMAND} -E make_directory ${FATFS_CONTENTS_DIR}/fs/
+    #         COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/filesystem_support/demo.txt ${FATFS_CONTENTS_DIR}/fs/
+    #         COMMAND fatfs_mkimage --input=${FATFS_CONTENTS_DIR} --output=${FATFS_FILE}
+    #     COMMENT)
 
-    add_custom_target(
-        ${FATFS_FILE} ALL
-        COMMAND ${CMAKE_COMMAND} -E rm -rf ${FATFS_CONTENTS_DIR}/fs/
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${FATFS_CONTENTS_DIR}/fs/
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/filesystem_support/demo.txt ${FATFS_CONTENTS_DIR}/fs/
-        COMMAND fatfs_mkimage --input=${FATFS_CONTENTS_DIR} --output=${FATFS_FILE}
-        COMMENT
+    create_flash_app_target(
+        #[[ Target ]]                   ${TARGET_NAME}
+        #[[ Copy Files ]]               ""           # No data partition for 4-mic beamformer
+        #[[ Dependencies ]]             ""           # No data partition dependencies
+    )
             "Create filesystem"
         VERBATIM
     )
