@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 /* Pipeline config */
-#define AP_MAX_Y_CHANNELS (2)
+#define AP_MAX_Y_CHANNELS (4)  // Supports 4-mic capture
 #define AP_MAX_X_CHANNELS (2)
 #define AP_FRAME_ADVANCE (240)
 
@@ -22,7 +22,7 @@
 #define AEC_SHADOW_FILTER_PHASES    (5)
 
 /* Delay buffer config */
-#define MAX_DELAY_BUF_CHANNELS (2)
+#define MAX_DELAY_BUF_CHANNELS (4)  // Supports 4-mic delay buffer
 #define DELAY_BUF_MAX_DELAY_MS                ( 150 )
 #define DELAY_BUF_MAX_DELAY_SAMPLES           ( 16000*DELAY_BUF_MAX_DELAY_MS/1000 )
 
