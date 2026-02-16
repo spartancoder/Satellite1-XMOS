@@ -192,4 +192,3 @@ add_library(fph::ffva::ap::fixed_delay ALIAS fixed_delay_aec_ic_ns_agc_2mic_2ref
 add_library(fph::ffva::ap::beamformer ALIAS beamformer_aec_ic_ns_agc_4mic_2ref)
 add_library(fph::ffva::ap::adec ALIAS adec_aec_ic_ns_agc_2mic_2ref)
 add_library(fph::ffva::ap::empty ALIAS empty_2mic_2ref)
-add_library(fph::ffva::ap::bypass_4mic ALIAS bypass_4mic_4mic_2ref)
