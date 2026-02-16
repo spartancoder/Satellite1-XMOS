@@ -102,6 +102,37 @@ target_link_libraries(adec_altarch_aec_ic_ns_agc_2mic_2ref
 )
 
 ##******************************************
+## Create beamformer AEC+IC+NS+AGC
+##   4 mic input channels
+##   2 reference input channels
+##******************************************
+
+add_library(beamformer_aec_ic_ns_agc_4mic_2ref INTERFACE)
+target_sources(beamformer_aec_ic_ns_agc_4mic_2ref
+    INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/beamformer/audio_pipeline_t0.c
+        ${CMAKE_CURRENT_LIST_DIR}/beamformer/audio_pipeline_t1.c
+        ${CMAKE_CURRENT_LIST_DIR}/beamformer/aec/aec_process_frame_1thread.c
+)
+target_include_directories(beamformer_aec_ic_ns_agc_4mic_2ref
+    INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}
+        ${CMAKE_CURRENT_LIST_DIR}/beamformer
+)
+target_link_libraries(beamformer_aec_ic_ns_agc_4mic_2ref
+    INTERFACE
+        core::general
+        rtos::freertos
+        rtos::sw_services::generic_pipeline
+        fwk_voice::aec
+        fwk_voice::agc
+        fwk_voice::ic
+        fwk_voice::ns
+        fwk_voice::vnr::features
+        fwk_voice::vnr::inference
+)
+
+##******************************************
 ## Create empty audio pipeline
 ##******************************************
 
@@ -129,5 +160,6 @@ target_link_libraries(empty_2mic_2ref
 
 add_library(fph::ffva::ap::adec_altarch ALIAS adec_altarch_aec_ic_ns_agc_2mic_2ref)
 add_library(fph::ffva::ap::fixed_delay ALIAS fixed_delay_aec_ic_ns_agc_2mic_2ref)
+add_library(fph::ffva::ap::beamformer ALIAS beamformer_aec_ic_ns_agc_4mic_2ref)
 add_library(fph::ffva::ap::adec ALIAS adec_aec_ic_ns_agc_2mic_2ref)
 add_library(fph::ffva::ap::empty ALIAS empty_2mic_2ref)
