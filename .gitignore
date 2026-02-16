@@ -79,3 +79,6 @@ dev_tracking
 .claude/**
 .devcontainer/**
 **/build*/**
+
+
+**/satellite-xmos-firmware/tests/data/synthetic/**
