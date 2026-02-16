@@ -39,8 +39,8 @@ target_link_options(fph_ffva_board_support_satellite1
 # West:  5 (pin 1 rising edge )
 # pins 2 & 3 are not used
 
-# Use all 4 mics for 4-channel capture
-set(MIC_MAPPING "0, 1, 4, 5")
+# Use all 4 mics for 4-channel capture (East, West, North, South order)
+set(MIC_MAPPING "4, 5, 0, 1")
 
 target_compile_definitions(fph_ffva_board_support_satellite1
     INTERFACE
