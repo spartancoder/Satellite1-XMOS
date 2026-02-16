@@ -29,6 +29,17 @@ foreach(FFVA_AP ${FFVA_PIPELINES_INT})
       list(APPEND FFVA_INT_COMPILE_DEFINITIONS appconfPIPELINE_BYPASS=0)
     endif()
 
+    # Add mic configuration per variant
+    if(${FFVA_AP} STREQUAL beamformer)
+      # Use 4 mics for beamformer (North, South, East, West order)
+      list(APPEND FFVA_INT_COMPILE_DEFINITIONS MIC_ARRAY_CONFIG_MIC_COUNT=4)
+      list(APPEND FFVA_INT_COMPILE_DEFINITIONS "MIC_ARRAY_CONFIG_INPUT_MAPPING={4,5,0,1}")
+    else()
+      # Use 2 mics (East, West) for other variants
+      list(APPEND FFVA_INT_COMPILE_DEFINITIONS MIC_ARRAY_CONFIG_MIC_COUNT=2)
+      list(APPEND FFVA_INT_COMPILE_DEFINITIONS "MIC_ARRAY_CONFIG_INPUT_MAPPING={4,5}")
+    endif()
+
     # message(${FFVA_INT_COMPILE_DEFINITIONS})
     
     #**********************

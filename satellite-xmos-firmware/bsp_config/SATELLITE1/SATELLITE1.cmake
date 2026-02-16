@@ -39,8 +39,9 @@ target_link_options(fph_ffva_board_support_satellite1
 # West:  5 (pin 1 rising edge )
 # pins 2 & 3 are not used
 
-# Use all 4 mics for 4-channel capture (East, West, North, South order)
-set(MIC_MAPPING "4, 5, 0, 1")
+# Note: Mic count and mapping are now set per variant in satellite1.cmake
+# - beamformer: 4 mics (East, West, North, South)
+# - other variants: 2 mics (East, West)
 
 target_compile_definitions(fph_ffva_board_support_satellite1
     INTERFACE
@@ -57,8 +58,6 @@ target_compile_definitions(fph_ffva_board_support_satellite1
         MIC_ARRAY_CONFIG_SAMPLES_PER_FRAME=240
         MIC_ARRAY_CONFIG_USE_DDR=1
         MIC_ARRAY_CONFIG_MIC_INPUT=8
-        MIC_ARRAY_CONFIG_MIC_COUNT=4
-        MIC_ARRAY_CONFIG_INPUT_MAPPING={${MIC_MAPPING}}
         
         MIC_ARRAY_CONFIG_CLOCK_BLOCK_A=XS1_CLKBLK_1
         MIC_ARRAY_CONFIG_CLOCK_BLOCK_B=XS1_CLKBLK_2
