@@ -12,7 +12,7 @@ This roadmap delivers a modular, testable DOA (Direction of Arrival) module that
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation** - Establish project scaffolding, 4-mic capture, and testing infrastructure
+- [x] **Phase 1: Foundation** - Establish project scaffolding, 4-mic capture, and testing infrastructure (completed 2026-02-16)
 - [ ] **Phase 2: DOA Module** - Implement SRP-PHAT direction of arrival estimation with 3D localization
 - [ ] **Phase 3: SPI Integration** - Transmit DOA data to ESP32 with backwards-compatible protocol
 
@@ -76,7 +76,7 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Not started | - |
+| 1. Foundation | 0/4 | Complete    | 2026-02-16 |
 | 2. DOA Module | 0/4 | Not started | - |
 | 3. SPI Integration | 0/3 | Not started | - |
 
