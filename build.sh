@@ -4,6 +4,7 @@ XMOS_TOOL_PATH=/opt/xmos/XTC/15.3.1
 
 # Source Python environment
 source .venv/bin/activate
+echo $XMOS_TOOL_PATH/SetEnv
 source $XMOS_TOOL_PATH/SetEnv
 
 # Configure CMake
