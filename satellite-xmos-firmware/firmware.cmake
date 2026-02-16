@@ -63,6 +63,7 @@ option(ENABLE_ALL_FFVA_PIPELINES  "Create all FFVA pipeline configurations"  OFF
 if(ENABLE_ALL_FFVA_PIPELINES)
     set(FFVA_PIPELINES_INT
         bypass
+        bypass_4mic
         fixed_delay
         beamformer
         adec
@@ -83,6 +84,7 @@ else()
         fixed_delay
         beamformer
         bypass
+        bypass_4mic
     )
 
     set(FFVA_PIPELINES_UA
