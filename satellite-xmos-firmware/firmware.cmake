@@ -64,6 +64,7 @@ if(ENABLE_ALL_FFVA_PIPELINES)
     set(FFVA_PIPELINES_INT
         bypass
         fixed_delay
+        beamformer
         adec
         adec_altarch
         empty
@@ -71,6 +72,7 @@ if(ENABLE_ALL_FFVA_PIPELINES)
 
     set(FFVA_PIPELINES_UA
         fixed_delay
+        beamformer
         adec
         adec_altarch
         empty
@@ -79,6 +81,7 @@ else()
     set(FFVA_PIPELINES_INT
         adec
         fixed_delay
+        beamformer
         bypass
     )
 
