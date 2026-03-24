@@ -40,6 +40,7 @@
 
 #include "gcc_phat.h"
 #include "doa_led.h"
+#include "control/doa_servicer.h"
 /* Config headers for sw_pll */
 #include "sw_pll.h"
 
@@ -49,6 +50,9 @@ volatile int aec_ref_source = appconfAEC_REF_DEFAULT;
 #if ON_TILE(1)
 DWORD_ALIGNED doa4_state_t doa;
 #endif
+
+// Shared DOA result - updated by pipeline, read by servicer
+DWORD_ALIGNED volatile doa_result_t doa_result_shared;
 
 #if ON_TILE(0)
 rtos_osal_queue_t *cntrlChannelPipelineOut;
@@ -243,8 +247,18 @@ void audio_pipeline_input(void *input_app_data,
                       mic_ptr,
                       frame_count,
                       portMAX_DELAY);
-#if ON_TILE(1)    
+#if ON_TILE(1)
     float ang = doa4_process_frame(&doa, mic_ptr, -31);
+
+    // Update shared DOA result
+    doa_result_shared.sources[0].azimuth_cdeg = doa_rad_to_cdeg(ang);
+    doa_result_shared.sources[0].elevation_cdeg = 0;  // Flat array, no elevation
+    doa_result_shared.sources[0].confidence = 100;    // Placeholder
+    doa_result_shared.sources[0].vad = 1;             // Placeholder
+    doa_result_shared.sources[1].confidence = 0;      // Unused
+    doa_result_shared.sources[2].confidence = 0;      // Unused
+    doa_result_shared.count = 1;
+
     static uint8_t led_buffer[LED_RING_NUM_LEDS * 3];
     static float ux=1.0f, uy=0.0f;
     float newx = cosf(ang), newy = sinf(ang);
@@ -395,6 +409,11 @@ void startup_task(void *arg)
     static device_control_audio_cfg_ctx_t audio_cfg_ctx;
     audio_cfg_servicer_init(&audio_cfg_ctx, cntrlChannelPipelineOut);
     audio_cfg_servicer_start(&audio_cfg_ctx, device_control_ctx, 1);
+
+    // DOA servicer
+    static doa_servicer_ctx_t doa_servicer_ctx;
+    doa_servicer_init(&doa_servicer_ctx, (doa_result_t *)&doa_result_shared);
+    doa_servicer_start(&doa_servicer_ctx, device_control_ctx, 1);
 
 #if BUILTIN_TESTS_SPI_ECHO_SERVICER
     static spi_echo_servicer_ctx_t echo_ctx;
