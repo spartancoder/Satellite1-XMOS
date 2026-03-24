@@ -41,6 +41,7 @@ This specification describes how to export Direction of Arrival (DOA) data calcu
 | azimuth | int16 | 0-35999 | Centidegrees (0.00°-359.99°) |
 | elevation | int16 | -9000 to +9000 | Centidegrees (-90.00° to +90.00°) |
 | confidence | uint8 | 0-100 | Percentage confidence |
+| vad | uint8 | 0-1 | Voice Activity Detection flag (0=silence/noise, 1=voice) |
 
 ### 2. Servicer Architecture: New DOA Servicer
 
@@ -88,10 +89,11 @@ typedef struct {
     int16_t azimuth_cdeg;    // Centidegrees: 0-35999 (0.00°-359.99°)
     int16_t elevation_cdeg;  // Centidegrees: -9000 to +9000 (-90.00° to +90.00°)
     uint8_t confidence;      // 0-100 percentage
+    uint8_t vad;             // Voice Activity Detection: 0=no voice, 1=voice detected
 } doa_source_t;
 ```
 
-**Size:** 5 bytes per source
+**Size:** 6 bytes per source
 
 ### DOA Result Structure
 
@@ -102,7 +104,7 @@ typedef struct {
 } doa_result_t;
 ```
 
-**Size:** 16 bytes total (5 × 3 + 1)
+**Size:** 19 bytes total (6 × 3 + 1)
 
 ## SPI Protocol
 
@@ -116,34 +118,37 @@ typedef struct {
 
 | CMD ID | Direction | Name | Payload | Description |
 |--------|-----------|------|---------|-------------|
-| 0 | Read | GET_DOA | 16 bytes | Get all DOA data |
+| 0 | Read | GET_DOA | 19 bytes | Get all DOA data |
 
-### Response Payload Layout (16 bytes)
+### Response Payload Layout (19 bytes)
 
 | Offset | Bytes | Field | Type | Description |
 |--------|-------|-------|------|-------------|
 | 0 | 2 | sources[0].azimuth | int16 LE | Azimuth in centidegrees |
 | 2 | 2 | sources[0].elevation | int16 LE | Elevation in centidegrees |
 | 4 | 1 | sources[0].confidence | uint8 | Confidence 0-100 |
-| 5 | 2 | sources[1].azimuth | int16 LE | Azimuth in centidegrees |
-| 7 | 2 | sources[1].elevation | int16 LE | Elevation in centidegrees |
-| 9 | 1 | sources[1].confidence | uint8 | Confidence 0-100 |
-| 10 | 2 | sources[2].azimuth | int16 LE | Azimuth in centidegrees |
-| 12 | 2 | sources[2].elevation | int16 LE | Elevation in centidegrees |
-| 14 | 1 | sources[2].confidence | uint8 | Confidence 0-100 |
-| 15 | 1 | count | uint8 | Number of valid sources (1-3) |
+| 5 | 1 | sources[0].vad | uint8 | Voice Activity Detection (0 or 1) |
+| 6 | 2 | sources[1].azimuth | int16 LE | Azimuth in centidegrees |
+| 8 | 2 | sources[1].elevation | int16 LE | Elevation in centidegrees |
+| 10 | 1 | sources[1].confidence | uint8 | Confidence 0-100 |
+| 11 | 1 | sources[1].vad | uint8 | Voice Activity Detection (0 or 1) |
+| 12 | 2 | sources[2].azimuth | int16 LE | Azimuth in centidegrees |
+| 14 | 2 | sources[2].elevation | int16 LE | Elevation in centidegrees |
+| 16 | 1 | sources[2].confidence | uint8 | Confidence 0-100 |
+| 17 | 1 | sources[2].vad | uint8 | Voice Activity Detection (0 or 1) |
+| 18 | 1 | count | uint8 | Number of valid sources (1-3) |
 
 ### Example Transaction
 
 **ESP32 Request (Read DOA):**
 ```
-TX: [0x1F] [0x80] [0x10]  // RESID=31, CMD=0|0x80 (read), LEN=16
+TX: [0x1F] [0x80] [0x13]  // RESID=31, CMD=0|0x80 (read), LEN=19
 ```
 
 **XMOS Response:**
 ```
-RX: [0x10] [0x00] [az0_lo] [az0_hi] [el0_lo] [el0_hi] [conf0] ...
-    // LEN=16, STATUS=SUCCESS, followed by 16-byte payload
+RX: [0x13] [0x00] [az0_lo] [az0_hi] [el0_lo] [el0_hi] [conf0] [vad0] ...
+    // LEN=19, STATUS=SUCCESS, followed by 19-byte payload
 ```
 
 ## Architecture Diagram
@@ -180,7 +185,7 @@ RX: [0x10] [0x00] [az0_lo] [az0_hi] [el0_lo] [el0_hi] [conf0] ...
 │                ▼                                            │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │ SPI Response                                        │    │
-│  │ [LEN][STATUS][16-byte DOA payload]                  │    │
+│  │ [LEN][STATUS][19-byte DOA payload]                  │    │
 │  └─────────────────────────────────────────────────────┘    │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -220,6 +225,7 @@ RX: [0x10] [0x00] [az0_lo] [az0_hi] [el0_lo] [el0_hi] [conf0] ...
 | Sources | 1 (sources[0] only) | Up to 3 sources |
 | Elevation | Always 0 (flat circular array) | Calculated if 3D array geometry |
 | Confidence | Fixed 100 (placeholder) | From GCC-PHAT peak correlation strength |
+| VAD | Fixed 1 (placeholder) | From voice activity detection pipeline |
 | Smoothing | None | Optional moving average filter |
 
 ## Testing
@@ -227,8 +233,9 @@ RX: [0x10] [0x00] [az0_lo] [az0_hi] [el0_lo] [el0_hi] [conf0] ...
 ### Unit Testing
 
 1. Verify servicer responds to RESID 31, CMD 0
-2. Verify payload is exactly 16 bytes
+2. Verify payload is exactly 19 bytes
 3. Verify byte order (little-endian) for int16 fields
+4. Verify VAD field is present (placeholder value 1)
 
 ### Integration Testing
 
