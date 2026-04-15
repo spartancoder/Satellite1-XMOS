@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xSCOPEconfig ioMode="basic" enabled="true">
+    <!-- Existing probes (must be first to match original IDs) -->
+    <Probe name="freertos_trace"       type="CONTINUOUS" datatype="NONE" units="NONE" enabled="true"/>
+    <Probe name="pll_freq"             type="CONTINUOUS" datatype="UINT" units="NONE" enabled="true"/>
+
+    <!-- Tile 1: Post-PDM decode, pre-gain (4 channels) -->
+    <Probe name="mic_raw_0"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_raw_1"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_raw_2"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_raw_3"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 1: Post-mic-gain (4 channels) -->
+    <Probe name="mic_gain_0"           type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_gain_1"           type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_gain_2"           type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_gain_3"           type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 1: Post-AEC (4 channels) -->
+    <Probe name="mic_aec_0"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_aec_1"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_aec_2"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="mic_aec_3"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 1: AEC residual / error signal (4 channels) -->
+    <Probe name="aec_residual_0"       type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="aec_residual_1"       type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="aec_residual_2"       type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="aec_residual_3"       type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 0: Post-IC output (2 channels) -->
+    <Probe name="ic_out_0"             type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="ic_out_1"             type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 0: IC residual (2 channels) -->
+    <Probe name="ic_residual_0"        type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="ic_residual_1"        type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 0: Post-NS (2 channels) -->
+    <Probe name="ns_out_0"             type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="ns_out_1"             type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 0: Post-AGC (2 channels) -->
+    <Probe name="agc_out_0"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="agc_out_1"            type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 0: Post-beamform (3 beams, future) -->
+    <Probe name="beam_0"               type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="beam_1"               type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+    <Probe name="beam_2"               type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Tile 0: Metadata (scalar values per frame) -->
+    <Probe name="vnr_value"            type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="agc_gain"             type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="doa_angle"            type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="doa_angle_raw"        type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="doa_confidence"       type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="vad_beam_0"           type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="vad_beam_1"           type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="vad_beam_2"           type="CONTINUOUS" datatype="FLOAT" units="NONE" enabled="true"/>
+    <Probe name="beam_selection"       type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+
+    <!-- Host-to-device: input source control -->
+    <Probe name="input_source"         type="CONTINUOUS" datatype="UINT"  units="NONE" enabled="true"/>
+</xSCOPEconfig>
