@@ -20,12 +20,45 @@
 #include "app_conf.h"
 #include "audio_pipeline.h"
 #include "audio_pipeline_dsp.h"
+#include "control/audio_pipeline_settings_servicer.h"
+#include "xscope_audio_io.h"
 
 #if appconfAUDIO_PIPELINE_FRAME_ADVANCE != 240
 #error This pipeline is only configured for 240 frame advance
 #endif
 
 #if ON_TILE(1)
+
+// External reference to shared mic gain values (defined in main.c)
+extern volatile mic_gain_t mic_gain_shared;
+
+// Apply per-microphone gain to raw mic samples after decimation
+static void stage_apply_mic_gain(frame_data_t *frame_data)
+{
+    // Cache gain values locally for consistency across all channels in this frame
+    uint16_t local_gain[MIC_GAIN_NUM_CHANNELS];
+    for (int i = 0; i < MIC_GAIN_NUM_CHANNELS; i++) {
+        local_gain[i] = mic_gain_shared.gain[i];
+    }
+
+    // Apply gain to each mic channel
+    for (int ch = 0; ch < appconfMIC_PIPELINE_INPUT_CHANNELS; ch++) {
+        uint16_t gain = local_gain[ch];
+        if (gain != MIC_GAIN_NEUTRAL) {
+            for (int s = 0; s < appconfAUDIO_PIPELINE_FRAME_ADVANCE; s++) {
+                // Q8.8 fixed-point multiply with saturation
+                int64_t sample = (int64_t)frame_data->mic_samples_passthrough[ch][s] * gain;
+                sample = sample >> MIC_GAIN_SHIFT;
+
+                // Clamp to int32_t range
+                if (sample > INT32_MAX) sample = INT32_MAX;
+                else if (sample < INT32_MIN) sample = INT32_MIN;
+
+                frame_data->mic_samples_passthrough[ch][s] = (int32_t)sample;
+            }
+        }
+    }
+}
 
 static void *audio_pipeline_input_i(void *input_app_data)
 {
@@ -37,6 +70,15 @@ static void *audio_pipeline_input_i(void *input_app_data)
                        (int32_t *)frame_data->aec_reference_audio_samples,
                        appconfMIC_PIPELINE_REF_CHANNELS + appconfMIC_PIPELINE_INPUT_CHANNELS,
                        appconfAUDIO_PIPELINE_FRAME_ADVANCE);
+
+    // Observation: raw mic after PDM decode, before gain
+    xscope_audio_io_send_raw_mic(frame_data->mic_samples_passthrough);
+
+    // Apply per-mic gain immediately after decimation
+    stage_apply_mic_gain(frame_data);
+
+    // Observation: mic after gain stage
+    xscope_audio_io_send_gain_mic(frame_data->mic_samples_passthrough);
 
     memcpy(frame_data->samples, frame_data->mic_samples_passthrough, sizeof(frame_data->samples));
 
