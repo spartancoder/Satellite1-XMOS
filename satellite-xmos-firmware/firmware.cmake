@@ -2,7 +2,7 @@
 # Gather Sources
 #**********************
 
-file(GLOB APP_SOURCES   
+file(GLOB APP_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/*.c
     ${CMAKE_CURRENT_LIST_DIR}/src/control/*.c
     ${CMAKE_CURRENT_LIST_DIR}/src/gpio/*.c
@@ -10,11 +10,21 @@ file(GLOB APP_SOURCES
     ${CMAKE_CURRENT_LIST_DIR}/src/led_ring/*.c
 )
 
+file(GLOB APP_USB_SOURCES
+    ${CMAKE_CURRENT_LIST_DIR}/src/usb/*.c
+)
+# Exclude Tile 1 stub from USB sources (Tile 0 should compile real USB stack, not stub)
+list(FILTER APP_USB_SOURCES EXCLUDE REGEX "tile1_stub")
+
 set(APP_INCLUDES
     ${CMAKE_CURRENT_LIST_DIR}/src
     ${CMAKE_CURRENT_LIST_DIR}/src/control
     ${CMAKE_CURRENT_LIST_DIR}/src/dfu_int
     ${CMAKE_CURRENT_LIST_DIR}/src/led_ring
+)
+
+set(APP_USB_INCLUDES
+    ${CMAKE_CURRENT_LIST_DIR}/src/usb
 )
 
 include(${CMAKE_CURRENT_LIST_DIR}/bsp_config/bsp_config.cmake)
@@ -108,5 +118,7 @@ endif()
 #**********************
 include(${CMAKE_CURRENT_LIST_DIR}/satellite1.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66-usb.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66-xscope-4mic.cmake)
 
 
