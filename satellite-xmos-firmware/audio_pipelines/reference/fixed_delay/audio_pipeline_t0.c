@@ -26,6 +26,7 @@
 #include "app_conf.h"
 #include "audio_pipeline.h"
 #include "audio_pipeline_dsp.h"
+#include "xscope_audio_io.h"
 
 #if appconfAUDIO_PIPELINE_FRAME_ADVANCE != 240
 #error This pipeline is only configured for 240 frame advance
@@ -90,6 +91,14 @@ static void stage_vnr_and_ic(frame_data_t *frame_data)
 
     ic_adapt(&ic_stage_state.state, vnr_pred_stage_state.vnr_pred_state.input_vnr_pred);
 
+    // Observation: IC output
+    {
+        int32_t ic_obs[2][appconfAUDIO_PIPELINE_FRAME_ADVANCE];
+        memset(ic_obs, 0, sizeof(ic_obs));
+        memcpy(ic_obs[0], ic_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));
+        xscope_audio_io_send_ic_out(ic_obs);
+    }
+
     /* Intentionally ignoring comms ch from here on out */
     memcpy(frame_data->samples[0], ic_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));
 #if appconfAUDIO_PIPELINE_STORE_IC_AUDIO    
@@ -108,6 +117,13 @@ static void stage_ns(frame_data_t *frame_data)
                 &ns_stage_state.state,
                 ns_output,
                 frame_data->samples[0]);
+    // Observation: NS output
+    {
+        int32_t ns_obs[2][appconfAUDIO_PIPELINE_FRAME_ADVANCE];
+        memset(ns_obs, 0, sizeof(ns_obs));
+        memcpy(ns_obs[0], ns_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));
+        xscope_audio_io_send_ns_out(ns_obs);
+    }
     memcpy(frame_data->samples[0], ns_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));
 #if appconfAUDIO_PIPELINE_STORE_NS_AUDIO
     memcpy(frame_data->aec_reference_audio_samples[1], ns_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));   // Store NS audio in the second reference channel
@@ -131,6 +147,13 @@ static void stage_agc(frame_data_t *frame_data)
             agc_output,
             frame_data->samples[0],
             &agc_stage_state.md);
+    // Observation: AGC output
+    {
+        int32_t agc_obs[2][appconfAUDIO_PIPELINE_FRAME_ADVANCE];
+        memset(agc_obs, 0, sizeof(agc_obs));
+        memcpy(agc_obs[0], agc_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));
+        xscope_audio_io_send_agc_out(agc_obs);
+    }
     memcpy(frame_data->samples, agc_output, appconfAUDIO_PIPELINE_FRAME_ADVANCE * sizeof(int32_t));
 #endif
 }
