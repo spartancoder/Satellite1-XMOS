@@ -33,6 +33,63 @@ Runtime switchable between PDM hardware input and xscope-injected input:
 - When inactive, pipeline reads PDM data as normal
 - Raw mic monitoring stream (device-to-host) operates independently of input source
 
+## Cross-Platform Portability
+
+### Platform Differences
+
+SQ66 and SATELLITE1 share identical pipeline topology but differ in hardware mapping:
+
+| Aspect | XK-VOICE-SQ66 | SATELLITE1 |
+|---|---|---|
+| PDM capture tile | Tile 0 | Tile 1 |
+| I2S output tile | Tile 1 | Tile 1 |
+| DDR mode | Off (`USE_DDR=0`) | On (`USE_DDR=1`) |
+| Mic port | 8-bit (`PORT_8D`) | 4-bit (`PORT_4D`) |
+| Mic mapping | `{4,5,6,7}` | `{0,4,1,5}` |
+| Pipeline channels | 4 in / 2 proc / 2 ref | 4 in / 2 proc / 2 ref |
+| Frame size | 240 samples | 240 samples |
+
+The pipeline code (`audio_pipeline_t1.c` / `audio_pipeline_t0.c`) uses `#if ON_TILE(0/1)` guards and is **already identical** on both platforms. PDM capture runs on whichever tile has `MICARRAY_TILE_NO`, and the intertile layer abstracts the tile routing. No tile layout restructuring is needed or desirable — the hardware pin assignments are fixed per board.
+
+### Compile Flag Design
+
+A single `appconfXSCOPE_4MIC_ENABLED` flag controls all xscope observation code. When disabled, every function in `xscope_audio_io.h` compiles to an empty inline stub:
+
+```c
+// xscope_audio_io.h
+#if appconfXSCOPE_4MIC_ENABLED
+
+void xscope_audio_io_init(void);
+void xscope_audio_io_send_gain_mic(const int32_t samples[4][FRAME_ADVANCE]);
+// ... full implementations linked from xscope_audio_io.c
+
+#else
+
+static inline void xscope_audio_io_init(void) {}
+static inline void xscope_audio_io_send_gain_mic(const int32_t samples[4][FRAME_ADVANCE]) { (void)samples; }
+// ... all functions become zero-overhead no-ops
+
+#endif
+```
+
+This means:
+- **Pipeline files contain zero IFDEFs** — observation calls are always present, compiling to nothing when the flag is off
+- **SATELLITE1 enablement** is a single CMake line: `appconfXSCOPE_4MIC_ENABLED=1`
+- **ESP32 communication and peripheral control** on SATELLITE1 are completely untouched
+- **No conditional code in pipeline logic** — the observation calls are non-invasive either way
+
+### SATELLITE1 Adaptation
+
+To port to SATELLITE1 after SQ66 testing:
+
+1. Create `satellite1-xscope-4mic.cmake` (copy SQ66 variant, change BSP paths and board name — ~10 lines)
+2. Set `appconfXSCOPE_4MIC_ENABLED=1` in the new variant
+3. Link `xscope_audio_io.c`
+4. No changes to `xscope_audio_io.c/h` — the module is platform-agnostic
+5. No changes to pipeline files — observation calls already work on both tile layouts
+6. Reuse `config-xscope-4mic.xscope` as-is
+7. Reuse `scripts/test_xscope_recorder.py` as-is
+
 ## Module API
 
 New module `xscope_audio_io.c/h` provides the public API:
