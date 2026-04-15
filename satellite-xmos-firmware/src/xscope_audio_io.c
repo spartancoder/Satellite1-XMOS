@@ -189,6 +189,8 @@ void xscope_audio_io_send_vad(int beam_idx, float vad_value)
 
 void xscope_audio_io_send_beam_selection(int selected_beam, int criteria)
 {
+    /* Packs selected_beam (bits 0-15) and criteria (bits 16-31) into a single int.
+     * Host unpacks: beam = val & 0xFFFF, criteria = val >> 16 */
     xscope_int(XSCOPE_ID_BEAM_SELECTION, ((unsigned int)criteria << 16) | ((unsigned int)selected_beam & 0xFFFF));
 }
 

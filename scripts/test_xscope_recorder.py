@@ -64,6 +64,7 @@ METADATA_PROBES = [
 FRAME_ADVANCE = 240
 SAMPLE_RATE = 16000
 BYTES_PER_SAMPLE = 4
+XSCOPE_DATA_TYPE_FLOAT = 3  # Matches XSCOPE_FLOAT in xscope.h
 
 
 def parse_args():
@@ -109,7 +110,7 @@ class XscopeRecorder(Endpoint):
 
         if probe_name in METADATA_PROBES:
             # Scalar value from xscope_float() or xscope_int()
-            if probe_info.get('data_type') == 3:  # XSCOPE_FLOAT
+            if probe_info.get('data_type') == XSCOPE_DATA_TYPE_FLOAT:
                 val = struct.unpack('f', struct.pack('I', data_val & 0xFFFFFFFF))[0]
             else:
                 val = int(data_val & 0xFFFFFFFF)
@@ -201,9 +202,20 @@ def write_metadata_csv(output_dir, probe_name, recorder):
 
     filepath = os.path.join(output_dir, f"{probe_name}.csv")
     with open(filepath, 'w') as f:
-        f.write("frame,value\n")
-        for i, val in enumerate(values):
-            f.write(f"{i},{val}\n")
+        if probe_name == 'beam_selection':
+            # Unpack bit-packed beam_selection: beam = bits 0-15, criteria = bits 16-31
+            f.write("frame,selected_beam,criteria\n")
+            for i, val in enumerate(values):
+                if isinstance(val, int):
+                    beam = val & 0xFFFF
+                    criteria = (val >> 16) & 0xFFFF
+                    f.write(f"{i},{beam},{criteria}\n")
+                else:
+                    f.write(f"{i},{val},\n")
+        else:
+            f.write("frame,value\n")
+            for i, val in enumerate(values):
+                f.write(f"{i},{val}\n")
     print(f"  Written {filepath} ({len(values)} values)")
 
 
