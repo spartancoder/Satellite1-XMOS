@@ -29,9 +29,13 @@
 #include "builtin_tests/spi_echo_servicer/spi_echo_servicer.h"
 
 #if appconfUSB_ENABLED
-#include "platform/usb/usb_support.h"
-#include "platform/usb/usb_audio.h"
-#include "platfrom/usb/usb_cdc.h"
+#include "usb_audio.h"
+#if !defined(USB_TILE_NO) || ON_TILE(USB_TILE_NO)
+#include "usb_support.h"
+#endif
+#if appconfUSB_CDC_ENABLED
+#include "usb_cdc.h"
+#endif
 #endif
 
 #if appconfLED_RING
@@ -41,8 +45,14 @@
 #include "gcc_phat.h"
 #include "doa_led.h"
 #include "control/doa_servicer.h"
+#include "control/audio_pipeline_settings_servicer.h"
 /* Config headers for sw_pll */
 #include "sw_pll.h"
+
+#if appconfXSCOPE_4MIC_ENABLED
+#include <xscope.h>
+#include "xscope_audio_io.h"
+#endif
 
 volatile int mic_from_usb = appconfMIC_SRC_DEFAULT;
 volatile int aec_ref_source = appconfAEC_REF_DEFAULT;
@@ -53,6 +63,16 @@ DWORD_ALIGNED doa4_state_t doa;
 
 // Shared DOA result - updated by pipeline, read by servicer
 DWORD_ALIGNED volatile doa_result_t doa_result_shared;
+
+// Shared mic gain - updated by servicer, read by pipeline
+DWORD_ALIGNED volatile mic_gain_t mic_gain_shared = {
+    .gain = {MIC_GAIN_NEUTRAL, MIC_GAIN_NEUTRAL, MIC_GAIN_NEUTRAL, MIC_GAIN_NEUTRAL}
+};
+
+// Shared LED settings - updated by servicer, read by pipeline
+DWORD_ALIGNED volatile led_settings_t led_settings_shared = {
+    .doa_led_enabled = DOA_LED_ENABLED_DEFAULT
+};
 
 #if ON_TILE(0)
 rtos_osal_queue_t *cntrlChannelPipelineOut;
@@ -255,27 +275,39 @@ void audio_pipeline_input(void *input_app_data,
     doa_result_shared.sources[0].elevation_cdeg = 0;  // Flat array, no elevation
     doa_result_shared.sources[0].confidence = 100;    // Placeholder
     doa_result_shared.sources[0].vad = 1;             // Placeholder
-    doa_result_shared.sources[1].confidence = 0;      // Unused
-    doa_result_shared.sources[2].confidence = 0;      // Unused
+    
+    doa_result_shared.sources[1].azimuth_cdeg = 90.0;
+    doa_result_shared.sources[1].elevation_cdeg = 90.0;  // Flat array, no elevation
+    doa_result_shared.sources[1].confidence = 75;    // Placeholder
+    doa_result_shared.sources[1].vad = 1;             // Placeholder
+    doa_result_shared.sources[2].azimuth_cdeg = 270.0;
+    doa_result_shared.sources[2].elevation_cdeg = 25.0;  // Flat array, no elevation
+    doa_result_shared.sources[2].confidence = 50;    // Placeholder
+    doa_result_shared.sources[2].vad = 1;             // Placeholder
     doa_result_shared.count = 1;
 
-    static uint8_t led_buffer[LED_RING_NUM_LEDS * 3];
-    static float ux=1.0f, uy=0.0f;
-    float newx = cosf(ang), newy = sinf(ang);
-    float alpha = 0.2f; // 0..1 (higher = faster)
-    ux = (1.0f-alpha)*ux + alpha*newx;
-    uy = (1.0f-alpha)*uy + alpha*newy;
-    float ang_smooth = atan2f(uy, ux);
-    led_ring_show_doa(
-        led_buffer,
-        LED_RING_NUM_LEDS,
-        ang_smooth,
-        /*led0_angle_offset_rad=*/0.0f,
-        /*led_index_offset=*/0,
-        /*brightness=*/64
-    );
+#if appconfLED_RING
+    // Automatic LED control tied to DOA (can be disabled via SPI)
+    if (led_settings_shared.doa_led_enabled) {
+        static uint8_t led_buffer[LED_RING_NUM_LEDS * 3];
+        static float ux=1.0f, uy=0.0f;
+        float newx = cosf(ang), newy = sinf(ang);
+        float alpha = 0.2f; // 0..1 (higher = faster)
+        ux = (1.0f-alpha)*ux + alpha*newx;
+        uy = (1.0f-alpha)*uy + alpha*newy;
+        float ang_smooth = atan2f(uy, ux);
+        led_ring_show_doa(
+            led_buffer,
+            LED_RING_NUM_LEDS,
+            ang_smooth,
+            /*led0_angle_offset_rad=*/0.0f,
+            /*led_index_offset=*/0,
+            /*brightness=*/64
+        );
 
-    rtos_ws2812_write( ws2812_ctx, &led_buffer );
+        rtos_ws2812_write( ws2812_ctx, &led_buffer );
+    }
+#endif
 #endif
 
 }
@@ -379,7 +411,13 @@ static void reset_watchdog(void)
 static void mem_analysis(void)
 {
 	for (;;) {
+        rtos_printf("==================================================\n");
 		rtos_printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
+        rtos_printf("==================================================\n");
+        printf("--------------------------------------------------\n");
+        printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
+        printf("--------------------------------------------------\n");
+
 #if appconfUSB_CDC_ENABLED        
         cdc_printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
 #endif
@@ -414,6 +452,13 @@ void startup_task(void *arg)
     static doa_servicer_ctx_t doa_servicer_ctx;
     doa_servicer_init(&doa_servicer_ctx, (doa_result_t *)&doa_result_shared);
     doa_servicer_start(&doa_servicer_ctx, device_control_ctx, 1);
+
+    // Audio Pipeline Settings servicer (for MIC_GAIN and LED control)
+    static audio_pipeline_settings_servicer_ctx_t audio_pipeline_settings_ctx;
+    audio_pipeline_settings_servicer_init(&audio_pipeline_settings_ctx,
+                                          (mic_gain_t *)&mic_gain_shared,
+                                          (led_settings_t *)&led_settings_shared);
+    audio_pipeline_settings_servicer_start(&audio_pipeline_settings_ctx, device_control_ctx, 1);
 
 #if BUILTIN_TESTS_SPI_ECHO_SERVICER
     static spi_echo_servicer_ctx_t echo_ctx;
@@ -513,6 +558,15 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
 {
     (void) c0;
     (void) c2;
+
+#if appconfXSCOPE_4MIC_ENABLED
+    /* Configure and enable xscope I/O subsystem before emitting any probes.
+     * Without this, all xscope_bytes/int/float calls are silently dropped. */
+    xscope_audio_io_init();
+
+    xscope_int(38, 0xAA);  /* test emission: verify data path is live */
+#endif
+
     (void) c3;
 
     tile_common_init(c1);
@@ -525,6 +579,12 @@ void main_tile1(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
     (void) c1;
     (void) c2;
     (void) c3;
+
+#if appconfXSCOPE_4MIC_ENABLED
+    /* Enable xscope I/O on tile 1.  Data routes through the XSCOPE link
+     * to tile 0 — no xscope_connect_data_from_host() needed here. */
+    xscope_audio_io_init();
+#endif
 
     tile_common_init(c0);
 }

@@ -73,6 +73,7 @@ enum {
 void xscope_audio_io_init(void)
 {
     xscope_config_io(XSCOPE_IO_BASIC);
+    xscope_enable();
 }
 
 /* ---- Host input (injection deferred — always returns false) ---- */

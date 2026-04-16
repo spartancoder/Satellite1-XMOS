@@ -104,7 +104,6 @@ void empty_stage(void)
 
 static void initialize_pipeline_stages(void)
 {
-    ;
 }
 
 void audio_pipeline_init(
