@@ -78,3 +78,25 @@ build/
 #tools/ai/ai_tools
 #*xcore_sdk_venv/*
 #examples/mic_aggregator/src/par_decimator
+opencode.json
+build.sh
+.devcontainer
+docs/
+.devcontainer/
+.claude
+.open-code
+.opencode
+
+
+# random build files
+recordings
+*build*.sh
+*SetEnv*
+config.xml
+tmp
+*run*.sh
+package.json
+package-lock.json
+
+platform_def.xn
+node_modules

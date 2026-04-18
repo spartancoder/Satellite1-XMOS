@@ -13,10 +13,14 @@ your application. */
 #define configCPU_CLOCK_HZ                      100000000
 
 #if ON_TILE(0)
+#ifndef configNUM_CORES
 #define configNUM_CORES                         6
 #endif
+#endif
 #if ON_TILE(1)
+#ifndef configNUM_CORES
 #define configNUM_CORES                         8
+#endif
 #endif
 
 #define configTICK_RATE_HZ                      1000

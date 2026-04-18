@@ -21,7 +21,7 @@ enum e_doa_servicer_cmd_map {
  * DOA source data structure.
  * Size: 6 bytes per source.
  */
-typedef struct {
+typedef struct __attribute__((packed)) {
     int16_t azimuth_cdeg;    // Centidegrees: 0-35999 (0.00°-359.99°)
     int16_t elevation_cdeg;  // Centidegrees: -9000 to +9000 (-90.00° to +90.00°)
     uint8_t confidence;      // 0-100 percentage

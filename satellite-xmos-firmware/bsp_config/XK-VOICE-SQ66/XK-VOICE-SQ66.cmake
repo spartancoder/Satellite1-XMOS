@@ -47,6 +47,8 @@ target_compile_definitions(fph_ffva_board_support_sq66
         PLATFORM_SUPPORTS_TILE_1=1
         PLATFORM_SUPPORTS_TILE_2=0
         PLATFORM_SUPPORTS_TILE_3=0
+        USB_TILE_NO=0
+        USB_TILE=tile[USB_TILE_NO]
 
         MIC_ARRAY_CONFIG_MCLK_FREQ=24576000
         MIC_ARRAY_CONFIG_PDM_FREQ=3072000

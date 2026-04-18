@@ -26,9 +26,9 @@
             <Port Location="XS1_PORT_8B"  Name="PORT_USB_RXD"/>
 
             <!-- QSPI Ports (Primary SPI) -->
-            <Port Location="XS1_PORT_1B" Name="PORT_SQI_CS"/>
-            <Port Location="XS1_PORT_1C" Name="PORT_SQI_SCLK"/>
-            <Port Location="XS1_PORT_4B" Name="PORT_SQI_SIO"/>
+            <Port Location="XS1_PORT_1B" Name="PORT_SQI_CS_0"/>
+            <Port Location="XS1_PORT_1C" Name="PORT_SQI_SCLK_0"/>
+            <Port Location="XS1_PORT_4B" Name="PORT_SQI_SIO_0"/>
 
             <!-- SPI Slave Ports (Secondary SPI) -->
             <Port Location="XS1_PORT_1A"  Name="PORT_XSPI_CS"/>

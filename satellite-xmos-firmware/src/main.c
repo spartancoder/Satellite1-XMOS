@@ -411,6 +411,7 @@ static void reset_watchdog(void)
 static void mem_analysis(void)
 {
 	for (;;) {
+#if !appconfXSCOPE_4MIC_ENABLED
         rtos_printf("==================================================\n");
 		rtos_printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
         rtos_printf("==================================================\n");
@@ -418,19 +419,22 @@ static void mem_analysis(void)
         printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
         printf("--------------------------------------------------\n");
 
-#if appconfUSB_CDC_ENABLED        
+#if appconfUSB_CDC_ENABLED
         cdc_printf("Tile[%d]:\n\tMinimum heap free: %d\n\tCurrent heap free: %d\n", THIS_XCORE_TILE, xPortGetMinimumEverFreeHeapSize(), xPortGetFreeHeapSize());
 #endif
-#if ON_TILE(0) && appconfWATCHDOG_ENABLED         
+#endif /* !appconfXSCOPE_4MIC_ENABLED */
+#if ON_TILE(0) && appconfWATCHDOG_ENABLED
         reset_watchdog();
-#endif        
+#endif
         vTaskDelay(pdMS_TO_TICKS(5000));
 	}
 }
 
 void startup_task(void *arg)
 {
+#if !appconfXSCOPE_4MIC_ENABLED
     rtos_printf("Startup task running from tile %d on core %d\n", THIS_XCORE_TILE, portGET_CORE_ID());
+#endif
     platform_start();
 
 
@@ -529,7 +533,9 @@ void startup_task(void *arg)
 
 void vApplicationMinimalIdleHook(void)
 {
+#if !appconfXSCOPE_4MIC_ENABLED
     rtos_printf("idle hook on tile %d core %d\n", THIS_XCORE_TILE, rtos_core_id_get());
+#endif
     asm volatile("waiteu");
 }
 
@@ -549,7 +555,9 @@ static void tile_common_init(chanend_t c)
                 appconfSTARTUP_TASK_PRIORITY,
                 NULL);
 
+#if !appconfXSCOPE_4MIC_ENABLED
     rtos_printf("start scheduler on tile %d\n", THIS_XCORE_TILE);
+#endif
     vTaskStartScheduler();
 }
 

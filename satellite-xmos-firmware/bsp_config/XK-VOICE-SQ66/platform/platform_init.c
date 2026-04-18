@@ -10,10 +10,20 @@
 #include "platform/driver_instances.h"
 #include "platform/platform_init.h"
 
+#if appconfUSB_ENABLED
+#include "adaptive_rate_adjust.h"
+#if ON_TILE(USB_TILE_NO)
+#include "usb_support.h"
+#endif
+#endif
+
 static void mclk_init(chanend_t other_tile_c)
 {
 #if ON_TILE(1) && !appconfEXTERNAL_MCLK
     app_pll_init();
+#endif
+#if appconfUSB_AUDIO_ENABLED && ON_TILE(USB_TILE_NO)
+    adaptive_rate_adjust_init();
 #endif
 }
 
@@ -22,9 +32,9 @@ static void flash_init(void)
 #if ON_TILE(FLASH_TILE_NO)
     fl_QuadDeviceSpec qspi_spec = BOARD_QSPI_SPEC;
     fl_QSPIPorts qspi_ports = {
-        .qspiCS = PORT_SQI_CS,
-        .qspiSCLK = PORT_SQI_SCLK,
-        .qspiSIO = PORT_SQI_SIO,
+        .qspiCS = PORT_SQI_CS_0,
+        .qspiSCLK = PORT_SQI_SCLK_0,
+        .qspiSIO = PORT_SQI_SIO_0,
         .qspiClkblk = FLASH_CLKBLK,
     };
 
@@ -37,9 +47,9 @@ static void flash_init(void)
     rtos_qspi_flash_init(
             qspi_flash_ctx,
             FLASH_CLKBLK,
-            PORT_SQI_CS,
-            PORT_SQI_SCLK,
-            PORT_SQI_SIO,
+            PORT_SQI_CS_0,
+            PORT_SQI_SCLK_0,
+            PORT_SQI_SIO_0,
             NULL);
 #endif
 }
@@ -185,7 +195,7 @@ static void i2s_init(void)
 static void servicer_init(void)
 {
 #if ON_TILE(GPIO_SERVICER_NO)
-    static device_control_gpio_ports_t gpio_res_info[GPIO_CONTROLLER_MAX_RESOURCES];      
+    static device_control_gpio_ports_t gpio_res_info[GPIO_CONTROLLER_MAX_RESOURCES];
     gpio_res_info[0].resource_idx = RESOURCE_IN_A;
     gpio_res_info[0].writeable = false;
     gpio_res_info[0].port_id = PORT_GPI_0;
@@ -200,16 +210,39 @@ static void servicer_init(void)
 #endif
 }
 
+static void usb_init(void)
+{
+#if appconfUSB_ENABLED && ON_TILE(USB_TILE_NO)
+    usb_manager_init();
+#endif
+}
+
+static void usb_cdc_init(void)
+{
+#if appconfUSB_CDC_ENABLED
+#if ON_TILE(USB_TILE_NO)
+    rtos_intertile_t *client_intertile_ctx[1] = {intertile_ctx};
+    rtos_cdc_rpc_host_init(client_intertile_ctx, 1);
+#else
+    rtos_cdc_rpc_client_init(intertile_ctx);
+#endif
+#endif
+}
 
 
 void platform_init(chanend_t other_tile_c)
 {
     rtos_intertile_init(intertile_ctx, other_tile_c);
+#if appconfUSB_AUDIO_ENABLED
+    rtos_intertile_init(intertile_usb_audio_ctx, other_tile_c);
+#endif
     mclk_init(other_tile_c);
     gpio_init();
     flash_init();
     spi_init();
     mics_init();
     i2s_init();
+    usb_init();
     servicer_init();
+    usb_cdc_init();
 }

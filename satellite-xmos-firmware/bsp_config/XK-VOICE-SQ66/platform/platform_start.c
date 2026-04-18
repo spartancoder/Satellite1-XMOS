@@ -14,6 +14,15 @@
 #include "platform_conf.h"
 #include "platform/driver_instances.h"
 
+#if appconfUSB_ENABLED
+#if ON_TILE(USB_TILE_NO)
+#include "usb_support.h"
+#endif
+#if appconfUSB_CDC_ENABLED
+#include "usb_cdc.h"
+#endif
+#endif
+
 #if appconfDEVICE_CTRL_SPI
 #include "device_control_spi.h"
 #endif
@@ -84,12 +93,34 @@ static void i2s_start(void)
 }
 
 
+static void usb_start(void)
+{
+#if appconfUSB_ENABLED && ON_TILE(USB_TILE_NO)
+    usb_manager_start(appconfUSB_MGR_TASK_PRIORITY);
+#endif
+}
+
+static void usb_cdc_start(void)
+{
+#if appconfUSB_CDC_ENABLED
+    rtos_cdc_rpc_config(appconfUSB_CDC_PORT, appconfUSB_CDC_PRIORITY);
+#if ON_TILE(USB_TILE_NO)
+    rtos_cdc_start();
+#endif
+#endif
+}
+
 void platform_start(void)
 {
     rtos_intertile_start(intertile_ctx);
+#if appconfUSB_AUDIO_ENABLED
+    rtos_intertile_start(intertile_usb_audio_ctx);
+#endif
     gpio_start();
     flash_start();
     spi_start();
     mics_start();
     i2s_start();
+    usb_start();
+    usb_cdc_start();
 }

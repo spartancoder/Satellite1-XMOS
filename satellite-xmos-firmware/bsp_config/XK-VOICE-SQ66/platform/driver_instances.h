@@ -31,7 +31,9 @@
 #define PDM_CLKBLK_1  XS1_CLKBLK_1
 #define PDM_CLKBLK_2  XS1_CLKBLK_2
 #define FLASH_CLKBLK  XS1_CLKBLK_3
+#define XUD_CLKBLK_1  XS1_CLKBLK_4 /* Reserved for lib_xud */
 #define SPI_CLKBLK    XS1_CLKBLK_5
+#define XUD_CLKBLK_2  XS1_CLKBLK_6 /* Reserved for lib_xud */
 
 /** TILE 1 Clock Blocks */
 #define I2S_CLKBLK    XS1_CLKBLK_1
@@ -44,6 +46,7 @@
 
 
 extern rtos_intertile_t *intertile_ctx;
+extern rtos_intertile_t *intertile_usb_audio_ctx;
 extern rtos_qspi_flash_t *qspi_flash_ctx;
 extern rtos_gpio_t *gpio_ctx_t0;
 extern rtos_gpio_t *gpio_ctx_t1;

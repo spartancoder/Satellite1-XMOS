@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import ctypes
 import os
 import sys
 import time
@@ -27,11 +28,15 @@ from collections import defaultdict
 import numpy as np
 from scipy.io import wavfile
 
-# Add mic_array module to path
-sys.path.insert(0, os.path.join(
-    os.environ.get('XMOS_TOOL_PATH', ''), '..', 'workspace',
-    'modules', 'io', 'modules', 'mic_array', 'script'
-))
+# Find mic_array module relative to this script's location
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_ws_root = os.path.dirname(_script_dir)  # scripts/ -> workspace/
+_mic_array_path = os.path.join(_ws_root, 'modules', 'io', 'modules', 'mic_array', 'script')
+if os.path.isdir(_mic_array_path):
+    sys.path.insert(0, _mic_array_path)
+else:
+    print(f"ERROR: mic_array module not found at {_mic_array_path}")
+    sys.exit(1)
 
 try:
     from mic_array.xscope import Endpoint
@@ -81,6 +86,20 @@ def parse_args():
 class XscopeRecorder(Endpoint):
     """Extended Endpoint that captures xscope_bytes audio data."""
 
+    # Override the record callback type to use c_void_p for data_bytes.
+    # The base Endpoint class uses c_char_p, which causes ctypes to convert
+    # the C char* to a Python bytes object via strlen(). Since audio data
+    # contains null bytes, this truncates the data and ctypes.string_at()
+    # then reads past the end into Python heap memory, producing the
+    # "Callable", "dtype", "Object" ASCII contamination we observed.
+    _RECORD_CALLBACK_RAW = ctypes.CFUNCTYPE(
+        None,
+        ctypes.c_uint,          # id
+        ctypes.c_ulonglong,     # timestamp
+        ctypes.c_uint,          # length
+        ctypes.c_ulonglong,     # dataval
+        ctypes.c_void_p)        # databytes — raw pointer, no strlen conversion
+
     def __init__(self, probe_filter=None):
         super().__init__()
         self._audio_buffers = defaultdict(list)
@@ -89,6 +108,20 @@ class XscopeRecorder(Endpoint):
         self._lock = threading.Lock()
         self._start_time = None
         self._probe_filter = probe_filter  # list of prefixes, or None for all
+        self._event_log = []  # diagnostic: log first N events
+        self._events_per_probe = defaultdict(int)
+        self._lengths_per_probe = defaultdict(set)
+        self._log_remaining = 50  # log first 50 events in detail
+
+    def _record_callback_func(self):
+        """Override to use c_void_p for data_bytes instead of c_char_p."""
+        def func(id_, timestamp, length, data_val, data_bytes):
+            self.on_record(id_, timestamp, length, data_val, data_bytes)
+        return self._RECORD_CALLBACK_RAW(func)
+
+    def on_print(self, timestamp, data):
+        """Silence firmware print events — they don't affect audio data."""
+        pass
 
     def _should_capture(self, probe_name):
         if self._probe_filter is None:
@@ -101,6 +134,18 @@ class XscopeRecorder(Endpoint):
             return
 
         probe_name = probe_info['name']
+
+        # Diagnostic: track event stats
+        with self._lock:
+            self._events_per_probe[probe_name] += 1
+            self._lengths_per_probe[probe_name].add(length)
+            if self._log_remaining > 0:
+                self._log_remaining -= 1
+                self._event_log.append({
+                    'id': id_, 'name': probe_name, 'length': length,
+                    'timestamp': timestamp, 'data_val': data_val,
+                    'data_bytes_addr': data_bytes
+                })
 
         if not self._should_capture(probe_name):
             return
@@ -124,7 +169,11 @@ class XscopeRecorder(Endpoint):
             # Byte array from xscope_bytes()
             num_samples = length // BYTES_PER_SAMPLE
             if num_samples > 0 and data_bytes:
-                samples = np.frombuffer(data_bytes[:length], dtype=np.int32)
+                # data_bytes is c_char_p; must copy exact length before
+                # interpreting as int32, otherwise ctypes slicing may
+                # produce a buffer whose size isn't a multiple of 4.
+                raw = ctypes.string_at(data_bytes, length)
+                samples = np.frombuffer(raw, dtype=np.int32)
                 with self._lock:
                     self._audio_buffers[probe_name].append(samples.copy())
 
@@ -140,6 +189,20 @@ class XscopeRecorder(Endpoint):
         """Get accumulated metadata values for a probe."""
         with self._lock:
             return list(self._metadata_values.get(probe_name, []))
+
+    def print_event_diagnostics(self):
+        """Print diagnostic info about received xscope events."""
+        print("\n--- Event Diagnostics ---")
+        with self._lock:
+            for name in sorted(self._events_per_probe):
+                lengths = self._lengths_per_probe[name]
+                print(f"  {name}: {self._events_per_probe[name]} events, "
+                      f"lengths={lengths}")
+            if self._event_log:
+                print(f"\n  First {len(self._event_log)} events (detail):")
+                for ev in self._event_log[:20]:
+                    print(f"    id={ev['id']} name={ev['name']} "
+                          f"len={ev['length']} ts={ev['timestamp']}")
 
     def elapsed(self):
         if self._start_time is None:
@@ -166,6 +229,8 @@ def write_audio_wav(output_dir, group_name, probe_names, recorder):
     max_len = 0
     for name in sorted(probe_names):
         data = recorder.get_audio_data(name)
+        if len(data) > 0:
+            print(f"  {name}: {len(data)} samples")
         if len(data) > max_len:
             max_len = len(data)
         channels.append(data)
@@ -185,7 +250,8 @@ def write_audio_wav(output_dir, group_name, probe_names, recorder):
     # Interleave channels: shape (max_len, num_channels)
     interleaved = np.column_stack(padded)
 
-    # Normalize int32 to int16 for WAV
+    # Convert int32 to int16 for WAV.
+    # PDM decimator output is in the upper 16 bits of int32 (Q1.31-ish).
     wav_data = (interleaved >> 16).astype(np.int16)
 
     filepath = os.path.join(output_dir, f"{group_name}.wav")
@@ -257,6 +323,7 @@ def main():
             if values:
                 write_metadata_csv(args.output_dir, probe_name, recorder)
 
+        recorder.print_event_diagnostics()
         recorder.disconnect()
         print(f"\nOutput saved to {args.output_dir}/")
 

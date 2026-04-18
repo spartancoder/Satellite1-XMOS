@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xSCOPEconfig enabled="true" initTracing="true" ioMode="basic">
+  <Probe name="freertos_trace" enabled="true" units="NONE" id="0" type="CONTINUOUS" datatype="NONE"/>
+  <Probe name="pll_freq" enabled="true" units="NONE" id="1" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_raw_0" enabled="true" units="NONE" id="2" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_raw_1" enabled="true" units="NONE" id="3" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_raw_2" enabled="true" units="NONE" id="4" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_raw_3" enabled="true" units="NONE" id="5" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_gain_0" enabled="true" units="NONE" id="6" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_gain_1" enabled="true" units="NONE" id="7" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_gain_2" enabled="true" units="NONE" id="8" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_gain_3" enabled="true" units="NONE" id="9" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_aec_0" enabled="true" units="NONE" id="10" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_aec_1" enabled="true" units="NONE" id="11" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_aec_2" enabled="true" units="NONE" id="12" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="mic_aec_3" enabled="true" units="NONE" id="13" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="aec_residual_0" enabled="true" units="NONE" id="14" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="aec_residual_1" enabled="true" units="NONE" id="15" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="aec_residual_2" enabled="true" units="NONE" id="16" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="aec_residual_3" enabled="true" units="NONE" id="17" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="ic_out_0" enabled="true" units="NONE" id="18" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="ic_out_1" enabled="true" units="NONE" id="19" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="ic_residual_0" enabled="true" units="NONE" id="20" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="ic_residual_1" enabled="true" units="NONE" id="21" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="ns_out_0" enabled="true" units="NONE" id="22" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="ns_out_1" enabled="true" units="NONE" id="23" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="agc_out_0" enabled="true" units="NONE" id="24" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="agc_out_1" enabled="true" units="NONE" id="25" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="beam_0" enabled="true" units="NONE" id="26" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="beam_1" enabled="true" units="NONE" id="27" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="beam_2" enabled="true" units="NONE" id="28" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="vnr_value" enabled="true" units="NONE" id="29" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="agc_gain" enabled="true" units="NONE" id="30" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="doa_angle" enabled="true" units="NONE" id="31" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="doa_angle_raw" enabled="true" units="NONE" id="32" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="doa_confidence" enabled="true" units="NONE" id="33" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="vad_beam_0" enabled="true" units="NONE" id="34" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="vad_beam_1" enabled="true" units="NONE" id="35" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="vad_beam_2" enabled="true" units="NONE" id="36" type="CONTINUOUS" datatype="FLOAT"/>
+  <Probe name="beam_selection" enabled="true" units="NONE" id="37" type="CONTINUOUS" datatype="UINT"/>
+  <Probe name="input_source" enabled="true" units="NONE" id="38" type="CONTINUOUS" datatype="UINT"/>
+</xSCOPEconfig>

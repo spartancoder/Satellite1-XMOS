@@ -76,6 +76,13 @@ static void *audio_pipeline_input_i(void *input_app_data)
                        appconfMIC_PIPELINE_REF_CHANNELS + appconfMIC_PIPELINE_INPUT_CHANNELS,
                        appconfAUDIO_PIPELINE_FRAME_ADVANCE);
 
+    /* audio_pipeline_input() writes ref+mic channels sequentially into
+     * aec_reference_audio_samples.  Copy the mic portion (channels 2..5)
+     * into mic_samples_passthrough for gain processing and observation. */
+    memcpy(frame_data->mic_samples_passthrough,
+           &frame_data->aec_reference_audio_samples[appconfMIC_PIPELINE_REF_CHANNELS],
+           sizeof(frame_data->mic_samples_passthrough));
+
     // Observation: raw mic after PDM decode, before gain
     xscope_audio_io_send_raw_mic(frame_data->mic_samples_passthrough);
 

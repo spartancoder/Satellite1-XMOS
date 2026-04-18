@@ -128,6 +128,19 @@
 
 
 /*****************************************/
+/*  USB I/O and interrupt cores          */
+/*****************************************/
+#ifndef appconfXUD_IO_CORE
+#define appconfXUD_IO_CORE                      5 /* Must be kept off core 0. Dedicated to XUD */
+#endif
+#ifndef appconfUSB_INTERRUPT_CORE
+#define appconfUSB_INTERRUPT_CORE               5 /* Shared with XUD I/O core (only 6 cores on Tile 0) */
+#endif
+#ifndef appconfUSB_SOF_INTERRUPT_CORE
+#define appconfUSB_SOF_INTERRUPT_CORE           5 /* Shared with XUD I/O core (only 6 cores on Tile 0) */
+#endif
+
+/*****************************************/
 /*  DFU Settings                         */
 /*****************************************/
 #define FL_QUADDEVICE_W25Q64JV \
