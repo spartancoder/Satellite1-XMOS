@@ -120,5 +120,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/satellite1.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66-usb.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66-xscope-4mic.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/xk-voice-sq66-fileio-batch.cmake)
 
 

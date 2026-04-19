@@ -22,7 +22,9 @@
 #include "platform/driver_instances.h"
 #include "platform/platform_conf.h"
 #include "audio_pipeline.h"
+#if !appconfBATCH_FILEIO_MODE
 #include "speaker_pipeline.h"
+#endif
 #include "dfu_servicer.h"
 #include "gpio/gpio_servicer.h"
 #include "control/audio_cfg_servicer.h"
@@ -46,6 +48,11 @@
 #include "doa_led.h"
 #include "control/doa_servicer.h"
 #include "control/audio_pipeline_settings_servicer.h"
+
+#if appconfBATCH_FILEIO_MODE
+#include "batch_processor.h"
+#include "soc_xscope_host.h"
+#endif
 /* Config headers for sw_pll */
 #include "sw_pll.h"
 
@@ -515,7 +522,7 @@ void startup_task(void *arg)
 #endif
 
 
-#if ON_TILE(SPEAKER_PIPELINE_TILE_NO)
+#if ON_TILE(SPEAKER_PIPELINE_TILE_NO) && !appconfBATCH_FILEIO_MODE
     ref_input_queue = rtos_osal_malloc( sizeof(rtos_osal_queue_t) );
     rtos_osal_queue_create(ref_input_queue, NULL, 2, sizeof(void *));
     speaker_pipeline_init(NULL, NULL);
@@ -567,6 +574,15 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
     (void) c0;
     (void) c2;
 
+#if appconfBATCH_FILEIO_MODE
+    /* Batch processing mode: no FreeRTOS, no real-time pipeline.
+     * The batch processor runs in init_xscope_host_data_user_cb()
+     * which receives the actual xscope chanend from tile_map.xc's par block.
+     * main_tile0 gets null as c3 — do not use it. */
+    (void) c3;
+    return;
+#else
+
 #if appconfXSCOPE_4MIC_ENABLED
     /* Configure and enable xscope I/O subsystem before emitting any probes.
      * Without this, all xscope_bytes/int/float calls are silently dropped. */
@@ -578,6 +594,7 @@ void main_tile0(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
     (void) c3;
 
     tile_common_init(c1);
+#endif /* appconfBATCH_FILEIO_MODE */
 }
 #endif
 
@@ -588,6 +605,11 @@ void main_tile1(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
     (void) c2;
     (void) c3;
 
+#if appconfBATCH_FILEIO_MODE
+    /* Tile 1 unused in batch mode — all DSP runs on tile 0 */
+    return;
+#else
+
 #if appconfXSCOPE_4MIC_ENABLED
     /* Enable xscope I/O on tile 1.  Data routes through the XSCOPE link
      * to tile 0 — no xscope_connect_data_from_host() needed here. */
@@ -595,5 +617,16 @@ void main_tile1(chanend_t c0, chanend_t c1, chanend_t c2, chanend_t c3)
 #endif
 
     tile_common_init(c0);
+#endif /* appconfBATCH_FILEIO_MODE */
+}
+#endif
+
+#if appconfBATCH_FILEIO_MODE && ON_TILE(0)
+/* Override weak init_xscope_host_data_user_cb from tile_map.xc.
+ * This runs on tile 0 in the par block, receiving the real xscope chanend
+ * connected to xscope_host_data(). Batch DSP processing happens here. */
+void init_xscope_host_data_user_cb(chanend_t c_host)
+{
+    batch_process(c_host);
 }
 #endif

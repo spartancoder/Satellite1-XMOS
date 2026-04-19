@@ -157,6 +157,10 @@
 #define appconfXSCOPE_4MIC_ENABLED    0
 #endif
 
+#ifndef appconfBATCH_FILEIO_MODE
+#define appconfBATCH_FILEIO_MODE      0
+#endif
+
 
 #include "app_conf_check.h"
 
