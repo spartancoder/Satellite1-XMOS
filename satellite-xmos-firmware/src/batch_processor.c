@@ -26,15 +26,14 @@
 #define SAMPLE_RATE       16000
 #define BIT_DEPTH         32
 #define MAX_INPUT_CHANS   6   /* ref_0, ref_1, mic_0..mic_3 */
-#define MAX_AEC_Y_CHANS   2
+#define MAX_AEC_Y_CHANS   4
 #define MAX_AEC_X_CHANS   2
-#define AEC_MAIN_PHASES   10
-#define AEC_SHADOW_PHASES 5
+#define AEC_MAIN_PHASES   7
 #define VNR_AGC_THRESHOLD (0.5f)
 
 /* ---------- DSP State (static, DWORD_ALIGNED) ---------- */
 
-/* AEC */
+/* AEC — shadow filter kept at 0 phases to satisfy aec_process_frame_1thread API */
 static aec_state_t DWORD_ALIGNED aec_main_state;
 static aec_state_t DWORD_ALIGNED aec_shadow_state;
 static aec_shared_state_t DWORD_ALIGNED aec_shared_state;
@@ -61,6 +60,7 @@ static int32_t DWORD_ALIGNED aec_shadow_out[MAX_AEC_Y_CHANS][FRAME_ADVANCE];
 static int32_t DWORD_ALIGNED ic_out_buf[FRAME_ADVANCE];
 static int32_t DWORD_ALIGNED ns_out_buf[FRAME_ADVANCE];
 static int32_t DWORD_ALIGNED agc_out_buf[FRAME_ADVANCE];
+static int32_t DWORD_ALIGNED write_buf_4ch[4 * FRAME_ADVANCE];
 static int32_t DWORD_ALIGNED write_buf_2ch[2 * FRAME_ADVANCE];
 
 /* ---------- Helpers ---------- */
@@ -95,11 +95,11 @@ static void interleave(const int32_t channels[][FRAME_ADVANCE],
 
 static void init_dsp(void)
 {
-    /* AEC */
+    /* AEC — shadow filter at 0 phases to reduce memory for 4-channel mode */
     aec_init(&aec_main_state, &aec_shadow_state, &aec_shared_state,
              &aec_main_pool[0], &aec_shadow_pool[0],
              MAX_AEC_Y_CHANS, MAX_AEC_X_CHANS,
-             AEC_MAIN_PHASES, AEC_SHADOW_PHASES);
+             AEC_MAIN_PHASES, 0 /* shadow phases */);
 
     /* IC + VNR */
     ic_init(&ic_state);
@@ -211,16 +211,16 @@ void batch_process(chanend_t c_xscope)
             }
         }
 
-        /* ---- Stage 1: AEC ---- */
+        /* ---- Stage 1: AEC (4 mic channels) ---- */
         aec_process_frame_1thread(
             &aec_main_state, &aec_shadow_state,
             aec_out, aec_shadow_out,
-            (const int32_t (*)[FRAME_ADVANCE])mic,      /* y_data: mic[0..1] */
+            (const int32_t (*)[FRAME_ADVANCE])mic,      /* y_data: mic[0..3] */
             (const int32_t (*)[FRAME_ADVANCE])ref);      /* x_data: ref[0..1] */
 
-        /* Write AEC output (2 channels) */
-        interleave(aec_out, write_buf_2ch, MAX_AEC_Y_CHANS, FRAME_ADVANCE);
-        xscope_fwrite(&out_aec, (uint8_t *)write_buf_2ch,
+        /* Write AEC output (4 channels) */
+        interleave(aec_out, write_buf_4ch, MAX_AEC_Y_CHANS, FRAME_ADVANCE);
+        xscope_fwrite(&out_aec, (uint8_t *)write_buf_4ch,
                       MAX_AEC_Y_CHANS * FRAME_ADVANCE * sizeof(int32_t));
 
         /* ---- Stage 2: IC + VNR ---- */

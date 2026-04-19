@@ -21,6 +21,8 @@ ${APP_COMPILE_DEFINITIONS}
     appconfPIPELINE_BYPASS=0
     appconfBATCH_FILEIO_MODE=1
     XSCOPE_HOST_IO_ENABLED=1
+    AEC_MAIN_FILTER_PHASES=7
+    AEC_SHADOW_FILTER_PHASES=0
 )
 
 # Additional include paths for DSP headers (aec_memory_pool.h, audio_pipeline_dsp.h)

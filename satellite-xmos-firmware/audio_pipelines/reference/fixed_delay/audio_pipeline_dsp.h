@@ -11,15 +11,19 @@
 #include <stdint.h>
 
 /* Pipeline config */
-#define AP_MAX_Y_CHANNELS (2)
+#define AP_MAX_Y_CHANNELS (4)
 #define AP_MAX_X_CHANNELS (2)
 #define AP_FRAME_ADVANCE (240)
 
 /* AEC config */
 #define AEC_MAX_Y_CHANNELS   (AP_MAX_Y_CHANNELS)
 #define AEC_MAX_X_CHANNELS   (AP_MAX_X_CHANNELS)
+#ifndef AEC_MAIN_FILTER_PHASES
 #define AEC_MAIN_FILTER_PHASES    (10)
+#endif
+#ifndef AEC_SHADOW_FILTER_PHASES
 #define AEC_SHADOW_FILTER_PHASES    (5)
+#endif
 
 /* Delay buffer config */
 #define MAX_DELAY_BUF_CHANNELS (2)
