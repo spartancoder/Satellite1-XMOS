@@ -38,6 +38,10 @@ void srp_phat_init(
     memset(state, 0, sizeof(*state));
     state->cfg = *cfg;
 
+    // Validate config bounds
+    if (cfg->num_directions == 0 || cfg->num_directions > SRP_PHAT_MAX_DIRS) return;
+    if (cfg->max_sources == 0 || cfg->max_sources > SRP_PHAT_MAX_SOURCES) return;
+
     memcpy(state->pairs, PAIRS, sizeof(PAIRS));
 
     // Precompute mic positions on circle
@@ -216,7 +220,7 @@ void srp_phat_process_frame(
         int i = state->pairs[p][0];
         int j = state->pairs[p][1];
 
-        compute_gcc_phat_corr(state, &state->Spec[i], &state->Spec[j]);
+        compute_gcc_phat_corr(state, &state->Spec[j], &state->Spec[i]);
         corr_to_float_window(&state->CorrBuf, window);
 
         for (unsigned d = 0; d < num_dir; d++) {
