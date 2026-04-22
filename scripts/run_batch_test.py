@@ -224,6 +224,30 @@ Examples:
         else:
             print(f"  {doa_bin} NOT FOUND")
 
+    # Convert SRP-PHAT DOA binary to CSV
+    srp_max_sources = 3
+    srp_source_size = struct.calcsize('<fff')  # angle_rad, angle_deg, confidence = 12 bytes
+    srp_frame_size = srp_max_sources * srp_source_size
+
+    for srp_bin, srp_csv, label in [
+        ('output_srp_doa.bin', 'output_srp_doa.csv', 'SRP-PHAT DOA (AEC)'),
+        ('output_srp_doa_raw.bin', 'output_srp_doa_raw.csv', 'SRP-PHAT DOA (raw mic)'),
+    ]:
+        if os.path.isfile(srp_bin):
+            data = open(srp_bin, 'rb').read()
+            n_frames = len(data) // srp_frame_size
+            with open(srp_csv, 'w') as f:
+                f.write('frame,source,confidence,angle_rad,angle_deg\n')
+                for frame in range(n_frames):
+                    for src in range(srp_max_sources):
+                        offset = frame * srp_frame_size + src * srp_source_size
+                        angle_rad, angle_deg, confidence = struct.unpack(
+                            '<fff', data[offset:offset + srp_source_size])
+                        f.write(f'{frame},{src},{confidence:.4f},{angle_rad:.6f},{angle_deg:.2f}\n')
+            print(f"  {srp_csv} ({label}, {n_frames} frames)")
+        else:
+            print(f"  {srp_bin} NOT FOUND")
+
     return ret
 
 
