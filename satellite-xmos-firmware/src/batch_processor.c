@@ -18,6 +18,7 @@
 
 /* DOA */
 #include "gcc_phat.h"
+#include "srp_phat.h"
 
 /* Local */
 #include "batch_processor.h"
@@ -57,6 +58,11 @@ static agc_state_t DWORD_ALIGNED agc_state;
 static doa4_state_t doa_state;
 static doa4_state_t doa_raw_state;
 static int32_t DWORD_ALIGNED doa_input[4 * FRAME_ADVANCE];
+
+/* SRP-PHAT DOA */
+static srp_phat_state_t srp_state;
+static srp_phat_state_t srp_raw_state;
+static int32_t DWORD_ALIGNED srp_input[4 * FRAME_ADVANCE];
 
 /* Working buffers (static to avoid stack overflow — ~26KB total) */
 static int32_t DWORD_ALIGNED read_buf[MAX_INPUT_CHANS * FRAME_ADVANCE];
@@ -121,6 +127,18 @@ static void init_dsp(void)
     /* DOA */
     doa4_init(&doa_state);
     doa4_init(&doa_raw_state);
+
+    /* SRP-PHAT DOA — 72 directions, 3 sources, 15° min separation */
+    srp_phat_config_t srp_cfg = {
+        .num_directions   = 72,
+        .max_sources      = 3,
+        .min_peak_sep_deg = 15,
+        .array_radius_m   = 0.0355f,
+        .sample_rate_hz   = 16000.0f,
+        .speed_of_sound   = 343.0f,
+    };
+    srp_phat_init(&srp_state, &srp_cfg);
+    srp_phat_init(&srp_raw_state, &srp_cfg);
 }
 
 /* ---------- Main ---------- */
@@ -186,6 +204,8 @@ void batch_process(chanend_t c_xscope)
     xscope_file_t out_agc = xscope_open_file("output_agc.wav", "wb");
     xscope_file_t out_doa = xscope_open_file("output_doa.bin", "wb");
     xscope_file_t out_doa_raw = xscope_open_file("output_doa_raw.bin", "wb");
+    xscope_file_t out_srp_doa     = xscope_open_file("output_srp_doa.bin", "wb");
+    xscope_file_t out_srp_doa_raw = xscope_open_file("output_srp_doa_raw.bin", "wb");
 
     /* Write placeholder headers (will update data sizes at the end) */
     wav_write_header(&out_aec, &out_hdr_aec);
@@ -297,6 +317,41 @@ void batch_process(chanend_t c_xscope)
             printf("  Frame %d: doa_raw=%.4f rad (%.1f deg), doa_aec=%.4f rad (%.1f deg)\n",
                    f, doa_raw, doa_raw * 57.2957795f,
                    doa_angle, doa_angle * 57.2957795f);
+        }
+
+        /* ---- Stage 5b: SRP-PHAT DOA ---- */
+        /* SRP-PHAT on raw mic input */
+        for (int ch = 0; ch < 4; ch++) {
+            memcpy(&srp_input[ch * FRAME_ADVANCE], mic[ch],
+                   FRAME_ADVANCE * sizeof(int32_t));
+        }
+        srp_phat_process_frame(&srp_raw_state, srp_input, -31);
+        xscope_fwrite(&out_srp_doa_raw, (uint8_t *)srp_raw_state.sources,
+                      srp_raw_state.cfg.max_sources * sizeof(srp_source_t));
+
+        /* SRP-PHAT on AEC output */
+        for (int ch = 0; ch < 4; ch++) {
+            memcpy(&srp_input[ch * FRAME_ADVANCE], aec_out[ch],
+                   FRAME_ADVANCE * sizeof(int32_t));
+        }
+        srp_phat_process_frame(&srp_state, srp_input, -31);
+        xscope_fwrite(&out_srp_doa, (uint8_t *)srp_state.sources,
+                      srp_state.cfg.max_sources * sizeof(srp_source_t));
+
+        /* SRP-PHAT diagnostics */
+        if (f < 5) {
+            printf("    SRP sources (raw): %u\n", srp_raw_state.num_sources_found);
+            for (unsigned s = 0; s < srp_raw_state.num_sources_found; s++) {
+                printf("      src%u: %.1f deg (conf %.2f)\n",
+                       s, srp_raw_state.sources[s].angle_deg,
+                       srp_raw_state.sources[s].confidence);
+            }
+            printf("    SRP sources (aec): %u\n", srp_state.num_sources_found);
+            for (unsigned s = 0; s < srp_state.num_sources_found; s++) {
+                printf("      src%u: %.1f deg (conf %.2f)\n",
+                       s, srp_state.sources[s].angle_deg,
+                       srp_state.sources[s].confidence);
+            }
         }
 
         /* Progress every 100 frames */
