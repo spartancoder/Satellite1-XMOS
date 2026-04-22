@@ -5,6 +5,7 @@ if((${CMAKE_SYSTEM_NAME} STREQUAL XCORE_XS3A) OR (${CMAKE_SYSTEM_NAME} STREQUAL 
         INTERFACE
             src/gcc_phat.c
             src/doa_led.c
+            src/srp_phat.c
     )
     target_include_directories(lib_doa
         INTERFACE
