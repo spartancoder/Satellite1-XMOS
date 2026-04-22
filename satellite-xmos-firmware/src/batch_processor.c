@@ -16,6 +16,9 @@
 #include "audio_pipeline_dsp.h"
 #include "agc_profiles.h"
 
+/* DOA */
+#include "gcc_phat.h"
+
 /* Local */
 #include "batch_processor.h"
 #include "wav_utils.h"
@@ -49,6 +52,11 @@ static ns_state_t DWORD_ALIGNED ns_state;
 
 /* AGC */
 static agc_state_t DWORD_ALIGNED agc_state;
+
+/* DOA */
+static doa4_state_t doa_state;
+static doa4_state_t doa_raw_state;
+static int32_t DWORD_ALIGNED doa_input[4 * FRAME_ADVANCE];
 
 /* Working buffers (static to avoid stack overflow — ~26KB total) */
 static int32_t DWORD_ALIGNED read_buf[MAX_INPUT_CHANS * FRAME_ADVANCE];
@@ -109,6 +117,10 @@ static void init_dsp(void)
 
     /* AGC */
     agc_init(&agc_state, &AGC_PROFILE_ASR);
+
+    /* DOA */
+    doa4_init(&doa_state);
+    doa4_init(&doa_raw_state);
 }
 
 /* ---------- Main ---------- */
@@ -172,6 +184,8 @@ void batch_process(chanend_t c_xscope)
     xscope_file_t out_ic  = xscope_open_file("output_ic.wav",  "wb");
     xscope_file_t out_ns  = xscope_open_file("output_ns.wav",  "wb");
     xscope_file_t out_agc = xscope_open_file("output_agc.wav", "wb");
+    xscope_file_t out_doa = xscope_open_file("output_doa.bin", "wb");
+    xscope_file_t out_doa_raw = xscope_open_file("output_doa_raw.bin", "wb");
 
     /* Write placeholder headers (will update data sizes at the end) */
     wav_write_header(&out_aec, &out_hdr_aec);
@@ -212,6 +226,14 @@ void batch_process(chanend_t c_xscope)
         }
 
         /* ---- Stage 1: AEC (4 mic channels) ---- */
+        /* Diagnostic: print first few mic samples to verify channel data */
+        if (f == 0) {
+            printf("  Mic samples [0..3] at frame 0:\n");
+            for (int ch = 0; ch < 4; ch++) {
+                printf("    mic[%d]: %d %d %d %d %d\n", ch,
+                       mic[ch][0], mic[ch][1], mic[ch][2], mic[ch][3], mic[ch][4]);
+            }
+        }
         aec_process_frame_1thread(
             &aec_main_state, &aec_shadow_state,
             aec_out, aec_shadow_out,
@@ -252,6 +274,30 @@ void batch_process(chanend_t c_xscope)
         /* Write AGC output (1 channel) */
         xscope_fwrite(&out_agc, (uint8_t *)agc_out_buf,
                       FRAME_ADVANCE * sizeof(int32_t));
+
+        /* ---- Stage 5: DOA ---- */
+        /* DOA on raw mic input */
+        for (int ch = 0; ch < 4; ch++) {
+            memcpy(&doa_input[ch * FRAME_ADVANCE], mic[ch],
+                   FRAME_ADVANCE * sizeof(int32_t));
+        }
+        float doa_raw = doa4_process_frame(&doa_raw_state, doa_input, -31);
+        xscope_fwrite(&out_doa_raw, (uint8_t *)&doa_raw, sizeof(float));
+
+        /* DOA on AEC output */
+        for (int ch = 0; ch < 4; ch++) {
+            memcpy(&doa_input[ch * FRAME_ADVANCE], aec_out[ch],
+                   FRAME_ADVANCE * sizeof(int32_t));
+        }
+        float doa_angle = doa4_process_frame(&doa_state, doa_input, -31);
+        xscope_fwrite(&out_doa, (uint8_t *)&doa_angle, sizeof(float));
+
+        /* Print first few DOA results for diagnostics */
+        if (f < 5) {
+            printf("  Frame %d: doa_raw=%.4f rad (%.1f deg), doa_aec=%.4f rad (%.1f deg)\n",
+                   f, doa_raw, doa_raw * 57.2957795f,
+                   doa_angle, doa_angle * 57.2957795f);
+        }
 
         /* Progress every 100 frames */
         if ((f + 1) % 100 == 0 || f == num_batch_frames - 1) {
