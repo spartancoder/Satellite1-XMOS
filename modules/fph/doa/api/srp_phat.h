@@ -31,7 +31,7 @@ extern "C" {
 #define SRP_PHAT_TAIL_SAMPLES   (SRP_PHAT_FFT_LENGTH - SRP_PHAT_FRAME_ADVANCE)
 #define SRP_PHAT_SPEC_BINS      ((SRP_PHAT_FFT_LENGTH / 2) + 1)
 #define SRP_PHAT_MAX_LAG        (5)
-#define SRP_PHAT_MAX_DIRS       (360)
+#define SRP_PHAT_MAX_DIRS       (72)
 #define SRP_PHAT_MAX_SOURCES    (8)
 
 // ------------------------------------------------------------
